@@ -11,7 +11,7 @@ type Config struct {
 	RedisPassword   string `env:"REDIS_PASSWORD"`
 	RedisThreads    int    `env:"REDIS_THREADS"`
 	SentryDSN       string `env:"SENTRY_DSN"`
-	DaemonSweepTime int    `env:"SWEEP_TIME"`
+	DaemonSweepTime int    `env:"SWEEP_TIME" envDefault:"1"`
 	BotToken        string `env:"BOT_TOKEN"`
 	ProductionMode  bool   `env:"PRODUCTION_MODE" envDefault:"false"`
 }

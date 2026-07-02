@@ -12,13 +12,13 @@ import (
 )
 
 type Daemon struct {
-	conf              config.Config
-	logger            *zap.Logger
-	db                *database.Database
-	redis             *redis.Client
-	premiumClient     *premium.PremiumLookupClient
-	AutoCloseQueue    *Queue[autoclose.Ticket]
-	CloseRequestQueue *Queue[database.CloseRequest]
+	conf                  config.Config
+	logger                *zap.Logger
+	db                    *database.Database
+	redis                 *redis.Client
+	premiumClient         *premium.PremiumLookupClient
+	AutoCloseQueue        *Queue[autoclose.Ticket]
+	CloseRequestScheduler *CloseRequestScheduler
 
 	sweepTime time.Duration
 }
@@ -41,14 +41,16 @@ func NewDaemon(
 	}
 
 	daemon.AutoCloseQueue = NewAutoCloseQueue(daemon, time.Second*1)
-	daemon.CloseRequestQueue = NewCloseRequestQueue(daemon, time.Second*1)
+	daemon.CloseRequestScheduler = NewCloseRequestScheduler(logger, db, redis)
 
 	return daemon
 }
 
 func (d *Daemon) Start() {
 	go d.AutoCloseQueue.Listen()
-	go d.CloseRequestQueue.Listen()
+
+	// Arm timers immediately so a restart doesn't wait a full sweep interval.
+	d.doOne()
 
 	for {
 		select {
@@ -65,5 +67,5 @@ func (d *Daemon) doOne() {
 	defer cancel()
 
 	d.SweepAutoClose(ctx)
-	d.SweepCloseRequestTimer(ctx)
+	d.CloseRequestScheduler.Reconcile(ctx)
 }
