@@ -4,7 +4,7 @@ go 1.22.0
 
 toolchain go1.22.4
 
-replace github.com/TicketsBot-cloud/database => ../database
+// replace github.com/TicketsBot-cloud/database => ../database
 
 // replace github.com/TicketsBot-cloud/common => ../common
 
@@ -23,7 +23,7 @@ require (
 require golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
 
 require (
-	github.com/TicketsBot-cloud/database v0.0.0-20260827064551-53077b598c5f
+	github.com/TicketsBot-cloud/database v0.0.0-20260827185255-75ab724b0bca
 	github.com/TicketsBot/ttlcache v1.6.1-0.20200405150101-acc18e37b261 // indirect
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
