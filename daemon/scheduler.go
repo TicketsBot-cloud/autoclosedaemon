@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/TicketsBot/common/closerequest"
-	"github.com/TicketsBot/database"
+	"github.com/TicketsBot-cloud/common/closerequest"
+	"github.com/TicketsBot-cloud/database"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 )

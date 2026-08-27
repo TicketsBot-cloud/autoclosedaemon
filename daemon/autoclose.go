@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/TicketsBot/common/collections"
-	"github.com/TicketsBot/common/premium"
-	"github.com/rxdn/gdl/rest/ratelimit"
-	"github.com/rxdn/gdl/rest/request"
+	"github.com/TicketsBot-cloud/common/collections"
+	"github.com/TicketsBot-cloud/common/premium"
+	"github.com/TicketsBot-cloud/gdl/rest/ratelimit"
+	"github.com/TicketsBot-cloud/gdl/rest/request"
 	"go.uber.org/zap"
 	"time"
 )
@@ -105,7 +105,7 @@ func (d *Daemon) SweepAutoClose(ctx context.Context) {
 				zap.Int("ticket", ticket.TicketId),
 			)
 
-			if err := d.db.AutoClose.Reset(ctx, ticket.GuildId); err != nil {
+			if err := d.db.PanelAutoClose.Reset(ctx, ticket.GuildId); err != nil {
 				d.logger.Error(
 					"Error resetting autoclose settings",
 					zap.Error(err),

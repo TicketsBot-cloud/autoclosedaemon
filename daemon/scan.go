@@ -2,7 +2,7 @@ package daemon
 
 import (
 	"context"
-	"github.com/TicketsBot/common/autoclose"
+	"github.com/TicketsBot-cloud/common/autoclose"
 )
 
 func (d *Daemon) scan() (tickets []autoclose.Ticket, err error) {
@@ -13,14 +13,14 @@ SELECT
     tlm.last_message_id
 FROM
     tickets t
-INNER JOIN auto_close ac
-    ON t.guild_id = ac.guild_id
+INNER JOIN panel_auto_close pac
+    ON t.panel_id = pac.panel_id
 LEFT OUTER JOIN ticket_last_message tlm
     ON t.guild_id = tlm.guild_id AND t.id = tlm.ticket_id
 LEFT JOIN auto_close_exclude exclude
 	ON t.guild_id = exclude.guild_id and t.id = exclude.ticket_id
 WHERE
-    ac.enabled 
+    pac.enabled
     AND
     t.open
 	AND
@@ -30,11 +30,15 @@ WHERE
 		(
 			tlm.ticket_id IS null
 			AND
-			(NOW() - t.open_time) >= ac.since_open_with_no_response
+			pac.since_open_with_no_response IS NOT NULL
+			AND
+			(NOW() - t.open_time) >= pac.since_open_with_no_response
 		)
 		OR
-     	(
-			(NOW() - tlm.last_message_time) >= ac.since_last_message
+	 	(
+			pac.since_last_message IS NOT NULL
+			AND
+			(NOW() - tlm.last_message_time) >= pac.since_last_message
 		)
 	)
 	AND
