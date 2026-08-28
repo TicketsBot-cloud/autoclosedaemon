@@ -3,9 +3,9 @@ package daemon
 import (
 	"context"
 	"github.com/TicketsBot/autoclosedaemon/config"
-	"github.com/TicketsBot/common/autoclose"
-	"github.com/TicketsBot/common/premium"
-	"github.com/TicketsBot/database"
+	"github.com/TicketsBot-cloud/common/autoclose"
+	"github.com/TicketsBot-cloud/common/premium"
+	"github.com/TicketsBot-cloud/database"
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"time"

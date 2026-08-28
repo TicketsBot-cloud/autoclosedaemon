@@ -1,7 +1,7 @@
 package daemon
 
 import (
-	"github.com/TicketsBot/common/autoclose"
+	"github.com/TicketsBot-cloud/common/autoclose"
 	"go.uber.org/zap"
 	"time"
 )
