@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/TicketsBot/autoclosedaemon/config"
 	"github.com/TicketsBot-cloud/common/autoclose"
+	"github.com/TicketsBot-cloud/common/encryption"
 	"github.com/TicketsBot-cloud/common/premium"
 	"github.com/TicketsBot-cloud/database"
 	"github.com/go-redis/redis/v8"
@@ -17,6 +18,7 @@ type Daemon struct {
 	db                    *database.Database
 	redis                 *redis.Client
 	premiumClient         *premium.PremiumLookupClient
+	tokenKeyring          *encryption.Keyring
 	AutoCloseQueue        *Queue[autoclose.Ticket]
 	CloseRequestScheduler *CloseRequestScheduler
 
@@ -29,6 +31,7 @@ func NewDaemon(
 	db *database.Database,
 	redis *redis.Client,
 	premiumClient *premium.PremiumLookupClient,
+	tokenKeyring *encryption.Keyring,
 	sweepTime time.Duration,
 ) *Daemon {
 	daemon := &Daemon{
@@ -37,6 +40,7 @@ func NewDaemon(
 		db:            db,
 		redis:         redis,
 		premiumClient: premiumClient,
+		tokenKeyring:  tokenKeyring,
 		sweepTime:     sweepTime,
 	}
 

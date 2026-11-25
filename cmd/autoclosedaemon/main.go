@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/TicketsBot/autoclosedaemon/config"
 	"github.com/TicketsBot/autoclosedaemon/daemon"
+	"github.com/TicketsBot-cloud/common/encryption"
 	"github.com/TicketsBot-cloud/common/observability"
 	"github.com/TicketsBot-cloud/common/premium"
 	"github.com/TicketsBot-cloud/common/sentry"
@@ -52,6 +53,11 @@ func main() {
 		panic(err)
 	}
 
+	tokenKeyring, err := encryption.ParseKeyring(conf.WhitelabelTokenKeys, conf.WhitelabelTokenActiveKeyVersion)
+	if err != nil {
+		logger.Fatal("Invalid whitelabel token key configuration", zap.Error(err))
+	}
+
 	logger.Debug("Connecting to database...")
 	dbClient := newDatabaseClient(conf)
 	logger.Debug("Connected to database, connecting to redis...")
@@ -68,6 +74,7 @@ func main() {
 		dbClient,
 		redisClient,
 		premiumClient,
+		tokenKeyring,
 		time.Minute*time.Duration(conf.DaemonSweepTime),
 	).Start()
 }

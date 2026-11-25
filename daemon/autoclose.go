@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/TicketsBot-cloud/common/collections"
+	"github.com/TicketsBot-cloud/common/encryption"
 	"github.com/TicketsBot-cloud/common/premium"
+	"github.com/TicketsBot-cloud/database"
 	"github.com/TicketsBot-cloud/gdl/rest/ratelimit"
 	"github.com/TicketsBot-cloud/gdl/rest/request"
 	"go.uber.org/zap"
@@ -16,6 +18,24 @@ var (
 	premiumCache  = make(map[uint64]bool)
 	botNotInGuild = collections.NewSet[uint64]()
 )
+
+var errTokenUnavailable = errors.New("whitelabel token unavailable")
+
+// whitelabelToken returns the token of a stored row. A guild can outlive its
+// bot's row, in which case there is no credential and the premium lookup runs
+// with an empty token. It never substitutes the public bot's token.
+func whitelabelToken(ring *encryption.Keyring, bot database.WhitelabelBot) (string, error) {
+	if bot.BotId == 0 {
+		return "", nil
+	}
+
+	token, err := ring.ResolveStored(bot.BotId, bot.Token, bot.TokenCiphertext, bot.TokenKeyVersion)
+	if err != nil {
+		return "", fmt.Errorf("%w for bot %d: %w", errTokenUnavailable, bot.BotId, err)
+	}
+
+	return token, nil
+}
 
 func (d *Daemon) SweepAutoClose(ctx context.Context) {
 	d.logger.Debug("Starting autoclose sweep")
@@ -33,7 +53,13 @@ func (d *Daemon) SweepAutoClose(ctx context.Context) {
 
 	d.logger.Debug("Closing tickets (autoclose)", zap.Int("count", len(tickets)))
 
+	tokenFailedGuilds := make(map[uint64]struct{})
+
 	for _, ticket := range tickets {
+		if _, failed := tokenFailedGuilds[ticket.GuildId]; failed {
+			continue
+		}
+
 		if notInGuild := botNotInGuild.Contains(ticket.GuildId); notInGuild {
 			if err := d.db.AutoCloseExclude.Exclude(ctx, ticket.GuildId, ticket.TicketId); err != nil {
 				d.logger.Error(
@@ -49,6 +75,19 @@ func (d *Daemon) SweepAutoClose(ctx context.Context) {
 
 		isPremium, err := d.isPremium(ctx, ticket.GuildId)
 		if err != nil {
+			// One bot's token says nothing about the other guilds, and its
+			// premium status is unknown, so its settings must be left alone.
+			if errors.Is(err, errTokenUnavailable) {
+				d.logger.Error(
+					"Skipping guild, whitelabel token is unavailable",
+					zap.Error(err),
+					zap.Uint64("guild", ticket.GuildId),
+				)
+				tokenFailedGuilds[ticket.GuildId] = struct{}{}
+
+				continue
+			}
+
 			var restError request.RestError
 			if errors.As(err, &restError) && restError.StatusCode == 404 {
 				// Bot is not in guild
@@ -140,7 +179,11 @@ func (d *Daemon) isPremium(ctx context.Context, guildId uint64) (bool, error) {
 				return false, err
 			}
 
-			token = res.Token
+			token, err = whitelabelToken(d.tokenKeyring, res)
+			if err != nil {
+				return false, err
+			}
+
 			keyPrefix = fmt.Sprintf("ratelimiter:%d", whitelabelBotId)
 		} else {
 			token = d.conf.BotToken
